@@ -1,16 +1,21 @@
-import * as cdk from 'aws-cdk-lib';
-import { Construct } from 'constructs';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as cdk from "aws-cdk-lib";
+import { Construct } from "constructs";
+import * as sqs from "aws-cdk-lib/aws-sqs";
+import { BmoPocStepFunction } from "./step-function";
 
 export class BmoPocStack extends cdk.Stack {
+  public readonly queue: sqs.Queue;
+
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // The code that defines your stack goes here
+    const queue = new sqs.Queue(this, "ApplicationReviewQueue", {
+      queueName: "ApplicationReviewQueue",
+    });
 
-    // example resource
-    // const queue = new sqs.Queue(this, 'BmoPocQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
+    //send the queue object as a prop to the step function
+    new BmoPocStepFunction(this, "ApplicationReviewProcessPOC", {
+      queue,
+    });
   }
 }
