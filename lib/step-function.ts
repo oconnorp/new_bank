@@ -15,7 +15,7 @@ export class BmoPocStepFunction extends Construct {
 
     const processTaskChoice = (taskName: string) => {
       const passedId = taskName + " Passed";
-      const choiceId = taskName + " Check";
+      const choiceId = taskName + "?";
       const sendMsgId = "Send " + taskName + "MessageToQueue";
 
       const messageProps = {
@@ -23,48 +23,40 @@ export class BmoPocStepFunction extends Construct {
         messageBody: sfn.TaskInput.fromObject({
           taskToken: sfn.JsonPath.taskToken,
           applicationId: sfn.JsonPath.stringAt("$.applicationId"),
-          task: sfn.JsonPath.stringAt("$.taskName"),
-          passed: sfn.JsonPath.objectAt("$.passed"),
+          task: taskName,
+          passed: false,
         }),
         integrationPattern: sfn.IntegrationPattern.WAIT_FOR_TASK_TOKEN,
       };
 
       const sendMsg = new tasks.SqsSendMessage(this, sendMsgId, messageProps);
 
-      return new sfn.Choice(this, choiceId)
+      return new sfn.Choice(this, choiceId, {})
         .when(
-          sfn.Condition.booleanEquals("$.passed", true),
+          sfn.Condition.booleanEquals("$." + taskName, true),
           new sfn.Succeed(this, passedId)
         )
-        .when(sfn.Condition.booleanEquals("$.passed", false), sendMsg);
+        .when(sfn.Condition.booleanEquals("$." + taskName, false), sendMsg);
     };
 
-    const transform = (taskName: string) => {
-      return new sfn.Pass(this, "Transform" + taskName, {
-        parameters: {
-          applicationId: sfn.JsonPath.stringAt("$.applicationId"),
-          taskName: taskName,
-          passed: sfn.JsonPath.objectAt("$." + taskName),
-        },
-      });
-    };
-
-    const ofac = processTaskChoice("ofac");
-    const pep = processTaskChoice("pep");
-    const articlesOfInc = processTaskChoice("articlesOfInc");
-    const businessInfo = processTaskChoice("businessInfo");
-    const transformOfac = transform("ofac");
-    const tranformPep = transform("pep");
-    const tranformArticlesOfInc = transform("articlesOfInc");
-    const tranformBusinessInfo = transform("businessInfo");
+    const ofac = processTaskChoice("isPersonalOfac");
+    const businessOfac = processTaskChoice("isBusinessOfac");
+    const pep = processTaskChoice("isPersonalPep");
+    const articlesOfInc = processTaskChoice("isArticleOfIncUploaded");
+    const businessFinancials = processTaskChoice("isBusinessFinUploaded");
+    const personalFinancials = processTaskChoice("isPersonalFinUploaded");
+    const outlierTestResult = processTaskChoice("outlierTestResult");
 
     const parallel = new sfn.Parallel(this, "Parallel Execution");
 
     const chain = parallel
-      .branch(transformOfac.next(ofac))
-      .branch(tranformPep.next(pep))
-      .branch(tranformArticlesOfInc.next(articlesOfInc))
-      .branch(tranformBusinessInfo.next(businessInfo));
+      .branch(ofac)
+      .branch(businessOfac)
+      .branch(pep)
+      .branch(articlesOfInc)
+      .branch(businessFinancials)
+      .branch(personalFinancials)
+      .branch(outlierTestResult);
 
     // Create the Step Function chain
     const chainDefinitionBody = sfn.ChainDefinitionBody.fromChainable(chain);

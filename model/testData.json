@@ -1,0 +1,10 @@
+{
+  "applicationId": "test12345",
+  "isBusinessOfac": true,
+  "isPersonalOfac": false,
+  "isPersonalPep": false,
+  "isArticleOfIncUploaded": false,
+  "isBusinessFinUploaded": true,
+  "isPersonalFinUploaded": true,
+  "outlierTestResult": true
+}
