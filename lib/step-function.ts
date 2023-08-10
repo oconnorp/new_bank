@@ -3,10 +3,12 @@ import * as cdk from "aws-cdk-lib";
 import * as sfn from "aws-cdk-lib/aws-stepfunctions";
 import * as tasks from "aws-cdk-lib/aws-stepfunctions-tasks";
 import * as sqs from "aws-cdk-lib/aws-sqs";
+import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
 
 interface BmoPocStepFunctionProps extends sfn.StateProps {
-  queue: sqs.Queue;
+  queue: sqs.Queue,
+  lambdaFunction: lambda.Function
 }
 
 export class BmoPocStepFunction extends Construct {
@@ -62,10 +64,12 @@ export class BmoPocStepFunction extends Construct {
     const chainDefinitionBody = sfn.ChainDefinitionBody.fromChainable(chain);
 
     // Create the Step Function state machine
-    new sfn.StateMachine(this, "BmoStepFunctionPoc", {
+    const stateMachine =  new sfn.StateMachine(this, "BmoStepFunctionPoc", {
       definitionBody: chainDefinitionBody,
       timeout: cdk.Duration.minutes(5), // Set the timeout as required
       stateMachineName: "BMOStepFunctionPOC",
     });
+    
+    stateMachine.grantTaskResponse(props.lambdaFunction);
   }
 }
